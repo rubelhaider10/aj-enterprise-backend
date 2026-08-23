@@ -1,0 +1,45 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String       @id @default(uuid())
+  username         String       @unique
+  password         String
+  name             String
+  role             String       // "ADMIN" অথবা "STAFF"
+  canAddExpense    Boolean      @default(false)
+  sales            TicketSale[]
+  expenses         Expense[]
+}
+
+model TicketSale {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  transportName   String
+  routeName       String   @default("ঢাকা - গন্তব্য")
+  ticketQuantity  Int
+  commissionRate  Float
+  totalCommission Float
+  date            DateTime @default(now())
+  month           String   // যেমন: "January", "February"
+  year            Int
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  category    String   
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  month       String   // যেমন: "January", "February"
+  year        Int
+}
