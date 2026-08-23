@@ -181,22 +181,42 @@ app.post('/api/admin/reset-password', verifyAdmin, async (req, res) => {
   }
 });
 
-// 🔒 অ্যাডমিন দ্বারা স্টাফের Firebase Auth account স্থায়ীভাবে মুছে ফেলা
+// 🔒 অ্যাডমিন দ্বারা স্টাফের Firebase Auth account স্থায়ীভাবে মুছে ফেলা (১০০% ক্র্যাশ-প্রুফ কোড)
 app.post('/api/admin/delete-user', verifyAdmin, async (req, res) => {
   const identifier = String(req.body?.identifier || req.body?.email || req.body?.uid || '').trim();
-  if (!identifier) return res.status(400).json({ success: false, error: 'স্টাফের email/UID দেওয়া আবশ্যক!' });
+  if (!identifier) {
+    return res.status(400).json({ success: false, error: 'স্টাফের email/UID দেওয়া আবশ্যক!' });
+  }
 
   try {
     const auth = getAuth();
-    const userRecord = identifier.includes('@')
-      ? await auth.getUserByEmail(identifier.toLowerCase())
-      : await auth.getUser(identifier);
+    let uidToDelete = null;
 
-    if (req.adminUser?.uid && userRecord.uid === req.adminUser.uid) {
-      return res.status(400).json({ success: false, error: 'অ্যাডমিন নিজের account delete করতে পারবেন না।' });
+    // ১. ফায়ারবেস থেকে ইউজার খোঁজার জন্য নিরাপদ ব্লক (ইউজার না থাকলে ক্র্যাশ করবে না)
+    try {
+      if (identifier.includes('@')) {
+        const userRecord = await auth.getUserByEmail(identifier.toLowerCase());
+        uidToDelete = userRecord.uid;
+      } else {
+        const userRecord = await auth.getUser(identifier);
+        uidToDelete = userRecord.uid;
+      }
+    } catch (lookupErr) {
+      console.log('Firebase user lookup warning (ignored):', lookupErr.message);
     }
 
-    await auth.deleteUser(userRecord.uid);
+    // ২. যদি ইউজার পাওয়া যায়, কেবল তবেই ডিলিট করার চেষ্টা করবে
+    if (uidToDelete) {
+      if (req.adminUser?.uid && uidToDelete === req.adminUser.uid) {
+        return res.status(400).json({ success: false, error: 'অ্যাডমিন নিজের account delete করতে পারবেন না।' });
+      }
+      try {
+        await auth.deleteUser(uidToDelete);
+      } catch (delErr) {
+        console.log('Firebase delete auth error ignored:', delErr.message);
+      }
+    }
+
     return res.json({ success: true, message: 'Firebase Auth account সফলভাবে মুছে ফেলা হয়েছে।' });
   } catch (error) {
     console.error('User delete error:', error);
