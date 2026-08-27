@@ -57,7 +57,7 @@ Error generating stack: `+e.message+`
         <div class="top-header">
           <div class="brand-info">
             <h2><span style="color:#2563eb;">AJ</span> এজে এন্টারপ্রাইজ</h2>
-            <p>ঠিকানা: লতিফ ম্যানশন, আব্দুল্লাহপুর, উত্তরা, ঢাকা-১২৩০</p>
+            <p>ঠিকানা: লতিফ ম্যানশন, আব্দুল্লাহপুর</p>
           </div>
           <div class="report-link-btn">আর্থিক বিবরণী রিপোর্ট</div>
         </div>
